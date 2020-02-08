@@ -1,0 +1,53 @@
+#!/bin/bash -ex
+#
+registry=""
+repository="vsmeets/registry-cleanup"
+
+# Calculated settings
+serverArch=$(docker version --format '{{.Server.Arch}}')
+gitBranch=$(git branch --show-current)
+gitVersion=$(git describe --exact-match)
+imageName="${registry:+${registry}/}${repository}"
+tmpTag=$(uuidgen --sha1 --namespace "@url" --name "${imageName}")
+
+function toFilename() {
+	local registry="${1:-docker.io}"
+	local repository="$2"
+	local tag="$3"
+
+	sed \
+		-e 's#:#-#g' \
+		-e 's#/#_#g' \
+		<<< "${registry}/${repository}:${tag}"
+}
+
+function updateManifest() {
+	baseTag="$1"
+	docker tag "${imageName}:${tmpTag}" "${imageName}:${baseTag}-${serverArch}"
+	docker push "${imageName}:${baseTag}-${serverArch}"
+	rm -rf "${HOME}/.docker/manifests/$(toFilename "$registry" "$repository" "$baseTag")"
+	docker manifest create "${imageName}:${baseTag}" $(docker image ls --format '{{.Repository}}:{{.Tag}}' "${imageName}:${baseTag}-*")
+	docker manifest push "${imageName}:${baseTag}"
+}
+
+if [ -z "$gitVersion" ]
+then
+	echo "Not an annotated version." >&2
+	exit 1;
+fi
+
+# Get all the existing images.
+docker pull --all-tags "${imageName}"
+
+# Build the image.
+docker build --pull --tag "${imageName}:${tmpTag}" .
+trap 'docker image rm "${imageName}:${tmpTag}"' 0
+
+# Update the manifest list for this version.
+updateManifest "${gitVersion}"
+
+# Update the latest manifest list.
+if [ "$gitBranch" == "master" ]
+then
+	updateManifest "latest"
+fi
