@@ -25,13 +25,11 @@ function updateManifest() {
 	baseTag="$1"
 	docker tag "${imageName}:${tmpTag}" "${imageName}:${baseTag}-${serverArch}"
 	docker push "${imageName}:${baseTag}-${serverArch}"
+	docker pull --all-tags "${imageName}"
 	rm -rf "${HOME}/.docker/manifests/$(toFilename "$registry" "$repository" "$baseTag")"
 	docker manifest create "${imageName}:${baseTag}" $(docker image ls --format '{{.Repository}}:{{.Tag}}' "${imageName}:${baseTag}-*")
 	docker manifest push "${imageName}:${baseTag}"
 }
-
-# Get all the existing images.
-docker pull --all-tags "${imageName}"
 
 # Build the image.
 docker build --pull --tag "${imageName}:${tmpTag}" .
