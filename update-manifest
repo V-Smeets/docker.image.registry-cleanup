@@ -6,7 +6,7 @@ repository="vsmeets/registry-cleanup"
 # Calculated settings
 serverArch=$(docker version --format '{{.Server.Arch}}')
 gitBranch=$(git branch --show-current)
-gitVersion=$(git describe --exact-match)
+gitVersion=$(git describe)
 imageName="${registry:+${registry}/}${repository}"
 tmpTag=$(uuidgen --sha1 --namespace "@url" --name "${imageName}")
 
@@ -29,12 +29,6 @@ function updateManifest() {
 	docker manifest create "${imageName}:${baseTag}" $(docker image ls --format '{{.Repository}}:{{.Tag}}' "${imageName}:${baseTag}-*")
 	docker manifest push "${imageName}:${baseTag}"
 }
-
-if [ -z "$gitVersion" ]
-then
-	echo "Not an annotated version." >&2
-	exit 1;
-fi
 
 # Get all the existing images.
 docker pull --all-tags "${imageName}"
