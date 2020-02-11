@@ -8,7 +8,7 @@ serverArch=$(docker version --format '{{.Server.Arch}}')
 gitBranch=$(git branch --show-current)
 gitVersion=$(git describe)
 imageName="${registry:+${registry}/}${repository}"
-tmpTag=$(uuidgen --sha1 --namespace "@url" --name "${imageName}")
+tmpTag=$(uuidgen --sha1 --namespace "@url" --name "${imageName}:${gitVersion}-${serverArch}")
 
 function toFilename() {
 	local registry="${1:-docker.io}"
