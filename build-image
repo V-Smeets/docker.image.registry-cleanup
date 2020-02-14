@@ -12,5 +12,7 @@ tagName="${gitVersion}"
 
 docker buildx build --platform "${platformList}" --pull --tag "${imageName}:${tagName}" --push .
 
+[ "$gitBranch" == "develop" ] \
+&& docker buildx build --platform "${platformList}" --pull --tag "${imageName}:${gitBranch}" --push .
 [ "$gitBranch" == "master" ] \
 && docker buildx build --platform "${platformList}" --pull --tag "${imageName}" --push .
