@@ -1,0 +1,18 @@
+#!/bin/bash
+#
+registry=""
+repository="vsmeets/registry-cleanup"
+platformList="linux/amd64,linux/arm64,linux/arm/v7"
+
+# Calculated settings
+gitBranch=$(git branch --show-current)
+gitVersion=$(git describe)
+imageName="${registry:+${registry}/}${repository}"
+tagName="${gitVersion}"
+
+docker buildx build --platform "${platformList}" --pull --tag "${imageName}:${tagName}" --push .
+
+[ "$gitBranch" == "develop" ] \
+&& docker buildx build --platform "${platformList}" --pull --tag "${imageName}:${gitBranch}" --push .
+[ "$gitBranch" == "master" ] \
+&& docker buildx build --platform "${platformList}" --pull --tag "${imageName}" --push .
